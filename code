@@ -1,0 +1,77 @@
+import tkinter as tk
+from tkinter import messagebox
+from datetime import datetime
+import json
+import os
+
+class ReminderApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Calendar and Reminder App")
+
+        self.date_label = tk.Label(root, text="Enter date (YYYY-MM-DD):")
+        self.date_label.pack()
+
+        self.date_entry = tk.Entry(root)
+        self.date_entry.pack()
+
+        self.reminder_label = tk.Label(root, text="Enter reminder:")
+        self.reminder_label.pack()
+
+        self.reminder_entry = tk.Entry(root)
+        self.reminder_entry.pack()
+
+        self.add_button = tk.Button(root, text="Add Reminder", command=self.add_reminder)
+        self.add_button.pack()
+
+        self.view_button = tk.Button(root, text="View Reminders", command=self.view_reminders)
+        self.view_button.pack()
+
+        self.reminders = self.load_reminders()
+
+    def load_reminders(self):
+        if os.path.exists("reminders.json"):
+            try:
+                with open("reminders.json", "r") as file:
+                    return json.load(file)
+            except json.JSONDecodeError:
+                messagebox.showerror("Error", "Failed to load reminders. The file may be corrupted.")
+                return {}
+        return {}
+
+    def save_reminders(self):
+        with open("reminders.json", "w") as file:
+            json.dump(self.reminders, file)
+
+    def add_reminder(self):
+        date_str = self.date_entry.get()
+        reminder_text = self.reminder_entry.get()
+
+        try:
+            date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            if date in self.reminders:
+                self.reminders[date].append(reminder_text)
+            else:
+                self.reminders[date] = [reminder_text]
+
+            self.save_reminders()
+            messagebox.showinfo("Success", "Reminder added successfully!")
+            self.date_entry.delete(0, tk.END)
+            self.reminder_entry.delete(0, tk.END)
+        except ValueError:
+            messagebox.showerror("Error", "Invalid date format! Use YYYY-MM-DD.")
+
+    def view_reminders(self):
+        reminders_text = ""
+        for date, reminders in self.reminders.items():
+            reminders_text += f"{date}: {', '.join(reminders)}\n"
+        
+        if not reminders_text:
+            reminders_text = "No reminders found."
+        
+        messagebox.showinfo("Reminders", reminders_text)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ReminderApp(root)
+    root.mainloop()
